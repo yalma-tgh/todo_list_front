@@ -69,7 +69,7 @@ export default function Home() {
         <TodoForm onAddTodo={addTodo} />
 
         <div className="mt-8">
-          <TodoList todos={todos} onToggleCompletion={toggleTodoCompletion} />
+          <TodoList todos={todos} onToggleComplete={toggleTodoCompletion} />
         </div>
 
         <div className="mt-6">
