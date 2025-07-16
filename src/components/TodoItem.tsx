@@ -1,29 +1,27 @@
 import React from "react";
 import { Card, CardContent } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
-import { format } from "date-fns";
+import { Button } from "./ui/button";
 
 interface TodoItemProps {
-  id: string;
+  id: number;
   title: string;
-  description: string;
+  description: string | null;
   completed: boolean;
-  createdAt: Date;
-  onToggleComplete: (id: string) => void;
+  createdAt: string;
+  onToggleComplete: (id: number) => void;
+  onDelete: (id: number) => void;
 }
 
-const TodoItem = ({
+const TodoItem: React.FC<TodoItemProps> = ({
   id,
   title,
   description,
   completed,
   createdAt,
-  onToggleComplete = () => {},
-}: TodoItemProps) => {
-  const formattedDate = createdAt
-    ? format(new Date(createdAt), "MMM dd, yyyy")
-    : "Date unavailable";
-
+  onToggleComplete,
+  onDelete,
+}) => {
   return (
     <Card className="bg-white w-full h-full transition-all hover:shadow-md">
       <CardContent className="p-4">
@@ -43,10 +41,13 @@ const TodoItem = ({
             <p
               className={`text-sm mb-2 ${completed ? "line-through text-gray-400" : "text-gray-600"}`}
             >
-              {description || "No description provided"}
+              {description || "No description"}
             </p>
-            <p className="text-xs text-gray-500">Created: {formattedDate}</p>
+            <p className="text-xs text-gray-500">Created: {createdAt}</p>
           </div>
+          <Button variant="destructive" size="sm" onClick={() => onDelete(id)}>
+            Delete
+          </Button>
         </div>
       </CardContent>
     </Card>

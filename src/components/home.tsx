@@ -1,58 +1,69 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TodoForm from "./TodoForm";
 import TodoList from "./TodoList";
 import StatusBar from "./StatusBar";
 
 interface Todo {
-  id: string;
+  id: number;
   title: string;
   description: string;
   completed: boolean;
-  createdAt: string;
+  created_at: string;
 }
 
 export default function Home() {
-  const [todos, setTodos] = useState<Todo[]>([
-    {
-      id: "1",
-      title: "Complete project proposal",
-      description: "Finish the draft and send it to the team for review",
-      completed: false,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      title: "Buy groceries",
-      description: "Milk, eggs, bread, and vegetables",
-      completed: true,
-      createdAt: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    },
-    {
-      id: "3",
-      title: "Schedule dentist appointment",
-      description: "Call Dr. Smith for a checkup",
-      completed: false,
-      createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-    },
-  ]);
+  const [todos, setTodos] = useState<Todo[]>([]);
 
-  const addTodo = (title: string, description: string) => {
-    const newTodo: Todo = {
-      id: Date.now().toString(),
-      title,
-      description,
-      completed: false,
-      createdAt: new Date().toISOString(),
-    };
-    setTodos([newTodo, ...todos]);
+  const fetchTodos = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/tasks/");
+      const data = await response.json();
+      setTodos(data);
+    } catch (err) {
+      console.error("Error fetching todos:", err);
+    }
   };
 
-  const toggleTodoCompletion = (id: string) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
-      ),
-    );
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const addTodo = async (title: string, description: string) => {
+    try {
+      const response = await fetch("http://localhost:8000/tasks/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description }),
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      await fetchTodos();
+    } catch (err) {
+      console.error("Error adding todo:", err);
+    }
+  };
+
+  const toggleTodoCompletion = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:8000/tasks/${id}/toggle-complete`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      await fetchTodos();
+    } catch (err) {
+      console.error("Error toggling todo:", err);
+    }
+  };
+
+  const deleteTodo = async (id: number) => {
+    try {
+      await fetch(`http://localhost:8000/tasks/${id}`, {
+        method: "DELETE",
+      });
+      await fetchTodos();
+    } catch (err) {
+      console.error("Error deleting todo:", err);
+    }
   };
 
   const completedCount = todos.filter((todo) => todo.completed).length;
@@ -69,7 +80,11 @@ export default function Home() {
         <TodoForm onAddTodo={addTodo} />
 
         <div className="mt-8">
-          <TodoList todos={todos} onToggleComplete={toggleTodoCompletion} />
+          <TodoList
+            todos={todos}
+            onToggleComplete={toggleTodoCompletion}
+            onDelete={deleteTodo}
+          />
         </div>
 
         <div className="mt-6">

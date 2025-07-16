@@ -2,23 +2,24 @@ import React from "react";
 import TodoItem from "./TodoItem";
 
 interface Todo {
-  id: string;
+  id: number;
   title: string;
   description: string;
-  createdAt: string;
+  created_at: string;
   completed: boolean;
 }
 
 interface TodoListProps {
   todos: Todo[];
-  onToggleComplete: (id: string) => void;
+  onToggleComplete: (id: number) => void;
+  onDelete: (id: number) => void;
 }
 
-const TodoList = ({
-  todos = [],
-  onToggleComplete = () => {},
-}: TodoListProps) => {
-  // If there are no todos, show a message
+const TodoList: React.FC<TodoListProps> = ({
+  todos,
+  onToggleComplete,
+  onDelete,
+}) => {
   if (todos.length === 0) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md text-center">
@@ -39,9 +40,10 @@ const TodoList = ({
             id={todo.id}
             title={todo.title}
             description={todo.description}
-            createdAt={todo.createdAt}
             completed={todo.completed}
+            createdAt={todo.created_at}
             onToggleComplete={onToggleComplete}
+            onDelete={onDelete}
           />
         ))}
       </div>
