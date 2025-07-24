@@ -1,7 +1,7 @@
 import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
-import { tempo } from "tempo-devtools/dist/vite";
+import tempo from "tempo-devtools/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,10 +9,7 @@ export default defineConfig({
   optimizeDeps: {
     entries: ["src/main.tsx", "src/tempobook/**/*"],
   },
-  plugins: [
-    react(),
-    tempo(),
-  ],
+  plugins: [react(), tempo()],
   resolve: {
     preserveSymlinks: true,
     alias: {
@@ -20,6 +17,13 @@ export default defineConfig({
     },
   },
   server: {
+    proxy: {
+      "/api": {
+        target: "http://35.225.173.123:8000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
     // @ts-ignore
     allowedHosts: true,
   }

@@ -22,7 +22,7 @@ export default function Home() {
       }
 
       try {
-        const response = await fetch("http://35.225.173.123:8000/tasks/", {
+        const response = await fetch("/api/tasks/", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

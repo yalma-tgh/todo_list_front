@@ -21,7 +21,7 @@ export default function Register() {
     }
 
     try {
-      const response = await fetch("http://35.225.173.123:8000/register", {
+      const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
