@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
@@ -7,23 +7,37 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // If the user is already logged in, redirect to the home page
+    if (localStorage.getItem("access_token")) {
+      navigate("/");
+    }
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     try {
       const response = await fetch("http://localhost:8000/login", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        credentials: "include",
         body: new URLSearchParams({ email, password }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.error || "Login failed. Check your credentials.");
+        setError(data.detail || "Login failed. Check your credentials.");
         return;
       }
 
-      navigate("/"); // Redirect to home after successful login
+      if (data.access_token) {
+        localStorage.setItem("access_token", data.access_token);
+        navigate("/"); // Redirect to home after successful login
+      } else {
+        setError("Login failed: No access token received.");
+      }
     } catch (err) {
       setError("An error occurred during login. Please try again.");
       console.error(err);
@@ -59,6 +73,12 @@ export default function Login() {
           <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
             Login
           </button>
+          <p className="mt-4 text-center">
+            Don't have an account?{" "}
+            <a href="/register" className="text-blue-500 hover:underline">
+              Register here
+            </a>
+          </p>
         </form>
       </div>
     </div>
