@@ -19,7 +19,7 @@ export default function Login() {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:8000/login", {
+      const response = await fetch("http://35.225.173.123:8000/login", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ email, password }),
