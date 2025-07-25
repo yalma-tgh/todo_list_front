@@ -13,6 +13,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tokenInfo, setTokenInfo] = useState<any>(null);
+  const [tokenTestInfo, setTokenTestInfo] = useState<any>(null);
   const navigate = useNavigate();
 
   // Function to debug token
@@ -21,6 +22,7 @@ export default function Home() {
     if (!token) return;
 
     try {
+      // First call the original debug endpoint
       const response = await fetch("/api/debug/token", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -33,6 +35,21 @@ export default function Home() {
         setTokenInfo(data);
       } else {
         console.error("Failed to debug token:", response.status);
+      }
+      
+      // Then call the simplified test endpoint
+      const testResponse = await fetch("/api/debug/token-test", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (testResponse.ok) {
+        const testData = await testResponse.json();
+        console.log("Token test info:", testData);
+        setTokenTestInfo(testData);
+      } else {
+        console.error("Failed to test token:", testResponse.status);
       }
     } catch (err) {
       console.error("Error debugging token:", err);
@@ -85,6 +102,11 @@ export default function Home() {
 
   useEffect(() => {
     fetchTasks();
+    // Try to debug the token right away
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      debugToken();
+    }
   }, [navigate]);
 
   const handleLogout = () => {
@@ -136,6 +158,32 @@ export default function Home() {
             )}
             {tokenInfo.error && (
               <div className="text-red-500">{tokenInfo.error}</div>
+            )}
+          </div>
+        )}
+        
+        {tokenTestInfo && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded">
+            <h2 className="font-bold mb-2 text-green-800">Token Test Results</h2>
+            {tokenTestInfo.status && (
+              <div className="mb-2 text-green-700">{tokenTestInfo.status}</div>
+            )}
+            {tokenTestInfo.payload_summary && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="font-semibold">Issuer:</div>
+                <div className="text-xs break-all">{tokenTestInfo.payload_summary.iss}</div>
+                <div className="font-semibold">Audience:</div>
+                <div>{tokenTestInfo.payload_summary.aud}</div>
+                <div className="font-semibold">Expiration:</div>
+                <div>{new Date(tokenTestInfo.payload_summary.exp * 1000).toLocaleString()}</div>
+                <div className="font-semibold">User Email:</div>
+                <div>{tokenTestInfo.user_info?.email}</div>
+                <div className="font-semibold">Username:</div>
+                <div>{tokenTestInfo.user_info?.username}</div>
+              </div>
+            )}
+            {tokenTestInfo.error && (
+              <div className="text-red-500">{tokenTestInfo.error}</div>
             )}
           </div>
         )}
