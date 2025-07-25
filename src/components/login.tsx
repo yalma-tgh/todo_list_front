@@ -5,26 +5,56 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     // If the user is already logged in, redirect to the home page
-    if (localStorage.getItem("access_token")) {
-      navigate("/");
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      // Validate token before redirecting
+      validateToken(token).then(isValid => {
+        if (isValid) {
+          navigate("/");
+        } else {
+          // Clear invalid token
+          localStorage.removeItem("access_token");
+        }
+      });
     }
   }, [navigate]);
+
+  // Function to validate token
+  const validateToken = async (token: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/tasks/", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.status !== 401;
+    } catch (err) {
+      console.error("Token validation error:", err);
+      return false;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
     try {
+      console.log("Attempting login with:", { email });
+      
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ email, password }),
       });
 
+      console.log("Login response status:", response.status);
+      
       const data = await response.json();
 
       if (!response.ok) {
@@ -33,14 +63,25 @@ export default function Login() {
       }
 
       if (data.access_token) {
+        console.log("Login successful, token received");
         localStorage.setItem("access_token", data.access_token);
-        navigate("/"); // Redirect to home after successful login
+        
+        // Verify token works immediately after login
+        const isValid = await validateToken(data.access_token);
+        if (isValid) {
+          navigate("/"); // Redirect to home after successful login
+        } else {
+          setError("Authentication failed. Please try again.");
+          localStorage.removeItem("access_token");
+        }
       } else {
         setError("Login failed: No access token received.");
       }
     } catch (err) {
+      console.error("Login error:", err);
       setError("An error occurred during login. Please try again.");
-      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,8 +111,12 @@ export default function Login() {
               required
             />
           </div>
-          <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
-            Login
+          <button 
+            type="submit" 
+            className="w-full bg-blue-500 text-white p-2 rounded disabled:bg-blue-300"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
           </button>
           <p className="mt-4 text-center">
             Don't have an account?{" "}
