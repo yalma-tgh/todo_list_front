@@ -12,7 +12,32 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tokenInfo, setTokenInfo] = useState<any>(null);
   const navigate = useNavigate();
+
+  // Function to debug token
+  const debugToken = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    try {
+      const response = await fetch("/api/debug/token", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Token debug info:", data);
+        setTokenInfo(data);
+      } else {
+        console.error("Failed to debug token:", response.status);
+      }
+    } catch (err) {
+      console.error("Error debugging token:", err);
+    }
+  };
 
   const fetchTasks = async () => {
     const token = localStorage.getItem("access_token");
@@ -24,6 +49,9 @@ export default function Home() {
     try {
       setLoading(true);
       console.log("Fetching tasks with token:", token.substring(0, 10) + "...");
+      
+      // Call debug endpoint first
+      await debugToken();
       
       const response = await fetch("/api/tasks/", {
         headers: {
@@ -69,13 +97,49 @@ export default function Home() {
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Todo List</h1>
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-          >
-            Logout
-          </button>
+          <div>
+            <button
+              onClick={debugToken}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2"
+            >
+              Debug Token
+            </button>
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            >
+              Logout
+            </button>
+          </div>
         </div>
+        
+        {tokenInfo && (
+          <div className="mb-4 p-4 bg-gray-50 border rounded">
+            <h2 className="font-bold mb-2">Token Debug Info</h2>
+            {tokenInfo.validation_check && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>Issuer Match:</div>
+                <div>{tokenInfo.validation_check.issuer_match ? '✅' : '❌'}</div>
+                <div>Audience Match:</div>
+                <div>{tokenInfo.validation_check.audience_match ? '✅' : '❌'}</div>
+                <div>Token Expired:</div>
+                <div>{tokenInfo.validation_check.token_expired === false ? '✅ Valid' : '❌ Expired'}</div>
+                <div>Issuer:</div>
+                <div className="text-xs break-all">{tokenInfo.payload_info?.iss}</div>
+                <div>Expected Issuer:</div>
+                <div className="text-xs break-all">{tokenInfo.authentik_config?.issuer}</div>
+                <div>Audience:</div>
+                <div>{tokenInfo.payload_info?.aud}</div>
+                <div>Expected Audience:</div>
+                <div>{tokenInfo.authentik_config?.client_id}</div>
+              </div>
+            )}
+            {tokenInfo.error && (
+              <div className="text-red-500">{tokenInfo.error}</div>
+            )}
+          </div>
+        )}
+        
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p>{error}</p>
