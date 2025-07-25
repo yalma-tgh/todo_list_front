@@ -65,11 +65,12 @@ export default function Home() {
 
     try {
       setLoading(true);
-      console.log("Fetching tasks with token:", token.substring(0, 10) + "...");
+      console.log("Fetching tasks with token:", token.substring(0, 20) + "...");
       
       // Call debug endpoint first
       await debugToken();
       
+      console.log("Making request to /api/tasks/ with auth header");
       const response = await fetch("/api/tasks/", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -77,26 +78,81 @@ export default function Home() {
       });
 
       console.log("Tasks response status:", response.status);
+      console.log("Tasks response headers:", response.headers);
+
+      // Log the raw response
+      try {
+        const responseText = await response.text();
+        console.log("Raw response:", responseText);
+        
+        // Now parse the response if it's JSON
+        if (responseText) {
+          try {
+            const data = JSON.parse(responseText);
+            setTasks(data);
+          } catch (parseError) {
+            console.error("Failed to parse response as JSON:", parseError);
+            setError("Received invalid data from server");
+            
+            // Try the public endpoint as fallback
+            console.log("Trying public tasks endpoint as fallback");
+            await fetchPublicTasks();
+          }
+        } else {
+          console.log("Response was empty");
+          setTasks([]);
+          
+          // Try the public endpoint as fallback
+          console.log("Trying public tasks endpoint as fallback");
+          await fetchPublicTasks();
+        }
+      } catch (textError) {
+        console.error("Failed to read response text:", textError);
+        setError("Failed to read server response");
+        
+        // Try the public endpoint as fallback
+        console.log("Trying public tasks endpoint as fallback");
+        await fetchPublicTasks();
+      }
 
       if (response.status === 401) {
-        console.log("Unauthorized access, attempting to refresh token...");
-        // Try to refresh the session by forcing a new login
-        localStorage.removeItem("access_token");
-        navigate("/login");
-        return;
+        console.log("Unauthorized access, attempting public tasks endpoint");
+        // Try the public endpoint
+        await fetchPublicTasks();
       }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch tasks: ${response.status}`);
       }
-
-      const data = await response.json();
-      setTasks(data);
     } catch (err) {
       console.error("Error fetching tasks:", err);
       setError("An error occurred while fetching tasks.");
+      
+      // Try the public endpoint as fallback
+      console.log("Trying public tasks endpoint as fallback");
+      await fetchPublicTasks();
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const fetchPublicTasks = async () => {
+    try {
+      console.log("Fetching public tasks");
+      const response = await fetch("/api/public-tasks/");
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Public tasks fetched successfully:", data);
+        setTasks(data);
+        setError(null);
+      } else {
+        console.error("Failed to fetch public tasks:", response.status);
+        setError("Failed to fetch tasks. Using public endpoint failed too.");
+      }
+    } catch (err) {
+      console.error("Error fetching public tasks:", err);
+      setError("Could not connect to the server.");
     }
   };
 

@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://35.225.173.123:8000",
+        target: "http://35.225.173.123:8000", // Ensure port 8000 is explicitly specified
         changeOrigin: true,
         rewrite: (path) => {
           console.log(`[Proxy Rewrite] Original Path: ${path}`);
@@ -32,6 +32,9 @@ export default defineConfig({
           proxy.on("proxyRes", (proxyRes, req) => {
             console.log(`[Proxy Response] URL: ${req.url}`);
             console.log(`[Proxy Response] Status Code: ${proxyRes.statusCode}`);
+            if (proxyRes.statusCode && proxyRes.statusCode >= 400) {
+              console.log(`[Proxy Response Error] Headers:`, proxyRes.headers);
+            }
           });
         },
       },
